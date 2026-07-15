@@ -1,8 +1,9 @@
 <template>
   <div class="editor-container">
+    <!-- 左侧：Markdown 输入区 -->
     <div class="panel left-panel">
-      <div class="panel-header">
         <h3>Markdown 编辑区</h3>
+      <div class="panel-header">
         <div class="header-actions">
           <!-- 1. 隐藏的文件选择框，绑定新的 ref -->
           <input 
@@ -12,7 +13,6 @@
             style="display: none;" 
             @change="handleFileImport" 
           />
-          <!-- 2. 导入按钮，点击触发方法 -->
           <button class="action-btn import-btn" @click="triggerFileInput">📂 导入 MD</button>
           <button class="action-btn copy-btn" @click="copyToWechat">📋 复制富文本</button>
           <button class="action-btn export-rtf-btn" @click="exportAsRtf">📝 导出 RTF</button>
@@ -24,8 +24,58 @@
         placeholder="在这里输入 Markdown 内容..."
         class="editor-textarea"
       ></textarea>
+
+      <!-- 2. 新增：使用说明折叠面板 -->
+      <div class="help-panel">
+        <button class="help-toggle" @click="showHelp = !showHelp">
+          {{ showHelp ? '📖 收起使用说明' : '📖 展开使用说明' }}
+        </button>
+        <div v-show="showHelp" class="help-content">
+          <div class="help-grid">
+            <div class="help-item">
+              <span class="help-label">标题</span>
+              <code>## 二级标题</code>
+              <code>### 三级标题</code>
+            </div>
+            <div class="help-item">
+              <span class="help-label">加粗 / 斜体</span>
+              <code>**加粗**</code>
+              <code>*斜体*</code>
+            </div>
+            <div class="help-item">
+              <span class="help-label">引用</span>
+              <code>> 引用内容</code>
+            </div>
+            <div class="help-item">
+              <span class="help-label">代码块</span>
+              <code>```语言名</code>
+              <code>代码内容</code>
+              <code>```
+</code>
+            </div>
+            <div class="help-item">
+              <span class="help-label">无序列表</span>
+              <code>- 列表项</code>
+            </div>
+            <div class="help-item">
+              <span class="help-label">有序列表</span>
+              <code>1. 列表项</code>
+            </div>
+            <div class="help-item">
+              <span class="help-label">链接</span>
+              <code>[文字](URL)</code>
+            </div>
+            <div class="help-item">
+              <span class="help-label">图片</span>
+              <code>![描述](图片URL)</code>
+            </div>
+          </div>
+          <p class="help-tip">💡 提示：点击「📋 复制富文本」后，直接到微信公众号编辑器中 Ctrl+V 粘贴即可保留排版样式。</p>
+        </div>
+      </div>
     </div>
 
+    <!-- 右侧：富文本预览区 -->
     <div class="panel right-panel">
       <h3>预览区</h3>
       <div class="preview-content" ref="previewRef">
@@ -56,7 +106,7 @@ const md: MarkdownIt = new MarkdownIt({
   }
 })
 
-const markdownText = ref(`## 🚀 破冰行动：核心链路\n\n这是你的第一个 **Markdown 转富文本** 工具！\n\n### 🎯 进阶目标\n\n> 周末搞到这个程度，成就感绝对爆棚！\n\n\`\`\`javascript\nconsole.log("Hello MD2WX!");\n\`\`\``)
+const markdownText = ref(`## 🚀 破冰行动：核心链路\n\n **Markdown 转富文本** 工具！\n\n### 🎯 进阶目标\n\n> 这个排版工具太好用了！`)
 
 // 明确声明正则参数类型，未使用的参数加下划线
 const renderedHtml = computed(() => {
@@ -80,6 +130,8 @@ const renderedHtml = computed(() => {
 // 明确声明 ref 类型
 const previewRef = ref<HTMLElement | null>(null)
 const fileInputRef = ref<HTMLInputElement | null>(null)
+// 控制使用说明的显示与隐藏
+const showHelp = ref(false)
 
 // 触发文件选择框
 const triggerFileInput = () => {
@@ -156,5 +208,17 @@ const downloadFile = (blob: Blob, fileName: string) => {
 .export-html-btn { background-color: #722ed1; }
 .export-html-btn:hover { background-color: #531dab; }
 .editor-textarea { flex: 1; border: none; outline: none; resize: none; font-size: 16px; font-family: monospace; }
+
+/* 使用说明样式 */
+.help-panel { margin-top: 10px; border-top: 1px dashed #ddd; padding-top: 8px; }
+.help-toggle { background: none; border: none; color: #888; font-size: 13px; cursor: pointer; padding: 4px 0; }
+.help-toggle:hover { color: #333; }
+.help-content { margin-top: 8px; padding: 10px; background: #fafafa; border-radius: 6px; border: 1px solid #eee; }
+.help-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; }
+.help-item { display: flex; flex-direction: column; gap: 2px; }
+.help-label { font-size: 12px; color: #999; font-weight: bold; }
+.help-item code { font-size: 12px; color: #555; background: #eee; padding: 1px 4px; border-radius: 3px; font-family: monospace; }
+.help-tip { margin-top: 10px; font-size: 12px; color: #888; }
+
 .preview-content { flex: 1; overflow-y: auto; padding: 10px; border: 1px solid #eee; border-radius: 4px; background: #fff; }
 </style>
