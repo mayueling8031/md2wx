@@ -140,7 +140,7 @@ const renderedHtml = computed(() => {
   return html
 })
 
-// 3. 明确指定 ref 的泛型为 HTMLInputElement，解决 TS18046 报错
+// 3. 明确指定 ref 的泛型，解决 TS18046 报错
 const previewRef = ref<HTMLElement | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
 
