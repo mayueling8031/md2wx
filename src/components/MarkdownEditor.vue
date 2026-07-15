@@ -2,10 +2,16 @@
   <div class="editor-container">
     <!-- 左侧：Markdown 输入区 -->
     <div class="panel left-panel">
-        <h3>Markdown 编辑区</h3>
+    <h3>Markdown 编辑区</h3>
       <div class="panel-header">
         <div class="header-actions">
-          <!-- 1. 隐藏的文件选择框，绑定新的 ref -->
+          <!-- 新建文件按钮 -->
+          <button class="action-btn new-btn" @click="createNewFile">📄 新建</button>
+          
+          <!-- 新建成功提示 -->
+          <span v-if="showNewTip" class="action-tip">✅ 已新建</span>
+
+          <!-- 隐藏的文件选择框 -->
           <input 
             type="file" 
             ref="fileInputRef" 
@@ -25,7 +31,7 @@
         class="editor-textarea"
       ></textarea>
 
-      <!-- 2. 新增：使用说明折叠面板 -->
+      <!-- 使用说明折叠面板 -->
       <div class="help-panel">
         <button class="help-toggle" @click="showHelp = !showHelp">
           {{ showHelp ? '📖 收起使用说明' : '📖 展开使用说明' }}
@@ -94,7 +100,7 @@ import MarkdownIt from 'markdown-it'
 import hljs from 'highlight.js'
 import 'highlight.js/styles/github.css' 
 
-// 明确声明类型，解决循环推断
+// 明确声明类型，解决 TS 循环推断报错
 const md: MarkdownIt = new MarkdownIt({
   highlight: function (str: string, lang: string): string {
     if (lang && hljs.getLanguage(lang)) {
@@ -106,9 +112,20 @@ const md: MarkdownIt = new MarkdownIt({
   }
 })
 
-const markdownText = ref(`## 🚀 破冰行动：核心链路\n\n **Markdown 转富文本** 工具！\n\n### 🎯 进阶目标\n\n> 这个排版工具太好用了！`)
+// 初始默认文本（仅在首次打开时显示）
+const markdownText = ref(`## 🚀 欢迎使用 MD2WX
 
-// 明确声明正则参数类型，未使用的参数加下划线
+在这里输入你的 **Markdown** 内容，右侧会实时预览排版效果。
+
+### 🎯 核心功能
+
+- 实时预览，所见即所得
+- 一键复制富文本，完美兼容微信公众号
+- 支持导入本地 .md 文件
+
+> 祝你创作愉快！`)
+
+// 明确声明正则参数类型，解决 TS6133 和 TS7006 报错
 const renderedHtml = computed(() => {
   let html = md.render(markdownText.value)
   
@@ -130,8 +147,28 @@ const renderedHtml = computed(() => {
 // 明确声明 ref 类型
 const previewRef = ref<HTMLElement | null>(null)
 const fileInputRef = ref<HTMLInputElement | null>(null)
-// 控制使用说明的显示与隐藏
 const showHelp = ref(false)
+
+// 新增：控制新建提示的显示
+const showNewTip = ref(false)
+
+// 新建文件功能：直接清空编辑区内容
+const createNewFile = () => {
+  // 如果当前有内容，弹出确认框防误触
+  if (markdownText.value.trim() !== '') {
+    const isConfirm = confirm('当前编辑区有内容，确定要清空并新建吗？')
+    if (!isConfirm) return
+  }
+  
+  // 核心修改：直接将内容置为空字符串
+  markdownText.value = ''
+  
+  // 显示成功提示
+  showNewTip.value = true
+  setTimeout(() => {
+    showNewTip.value = false
+  }, 2000) // 2秒后自动隐藏提示
+}
 
 // 触发文件选择框
 const triggerFileInput = () => {
@@ -197,8 +234,10 @@ const downloadFile = (blob: Blob, fileName: string) => {
 .editor-container { display: flex; height: 90vh; gap: 10px; padding: 10px; }
 .panel { flex: 1; display: flex; flex-direction: column; border: 1px solid #ddd; border-radius: 8px; padding: 10px; }
 .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-.header-actions { display: flex; gap: 8px; }
+.header-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .action-btn { padding: 6px 12px; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; white-space: nowrap; }
+.new-btn { background-color: #555; }
+.new-btn:hover { background-color: #333; }
 .import-btn { background-color: #1890ff; }
 .import-btn:hover { background-color: #096dd9; }
 .copy-btn { background-color: #07c160; }
@@ -209,7 +248,23 @@ const downloadFile = (blob: Blob, fileName: string) => {
 .export-html-btn:hover { background-color: #531dab; }
 .editor-textarea { flex: 1; border: none; outline: none; resize: none; font-size: 16px; font-family: monospace; }
 
-/* 使用说明样式 */
+/* 新建成功提示样式 */
+.action-tip {
+  font-size: 12px;
+  color: #07c160;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  animation: fadeInOut 2s ease-in-out;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
 .help-panel { margin-top: 10px; border-top: 1px dashed #ddd; padding-top: 8px; }
 .help-toggle { background: none; border: none; color: #888; font-size: 13px; cursor: pointer; padding: 4px 0; }
 .help-toggle:hover { color: #333; }
