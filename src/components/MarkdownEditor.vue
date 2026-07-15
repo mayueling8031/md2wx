@@ -2,17 +2,18 @@
   <div class="editor-container">
     <!-- 左侧：Markdown 输入区 -->
     <div class="panel left-panel">
-    <h3>Markdown 编辑区</h3>
       <div class="panel-header">
+        <h3>Markdown 编辑区</h3>
         <div class="header-actions">
+          <!-- 【修改点1】：不再使用 $refs.fileInput.click()，改用 ref 绑定，彻底解决 TS18046 -->
           <input 
             type="file" 
-            ref="fileInput" 
+            ref="fileInputRef" 
             accept=".md,.markdown,.txt" 
             style="display: none;" 
             @change="handleFileImport" 
           />
-          <button class="action-btn import-btn" @click="$refs.fileInput.click()">📂 导入 MD</button>
+          <button class="action-btn import-btn" @click="triggerFileInput">📂 导入 MD</button>
           <button class="action-btn copy-btn" @click="copyToWechat">📋 复制富文本</button>
           <button class="action-btn export-rtf-btn" @click="exportAsRtf">📝 导出 RTF</button>
           <button class="action-btn export-html-btn" @click="exportAsHtml">🌐 导出 HTML</button>
@@ -23,55 +24,6 @@
         placeholder="在这里输入 Markdown 内容，或者导入本地 .md 文件..."
         class="editor-textarea"
       ></textarea>
-
-      <!-- 新增：使用说明折叠面板 -->
-      <div class="help-panel">
-        <button class="help-toggle" @click="showHelp = !showHelp">
-          {{ showHelp ? '📖 收起使用说明' : '📖 展开使用说明' }}
-        </button>
-        <div v-show="showHelp" class="help-content">
-          <div class="help-grid">
-            <div class="help-item">
-              <span class="help-label">标题</span>
-              <code>## 二级标题</code>
-              <code>### 三级标题</code>
-            </div>
-            <div class="help-item">
-              <span class="help-label">加粗 / 斜体</span>
-              <code>**加粗**</code>
-              <code>*斜体*</code>
-            </div>
-            <div class="help-item">
-              <span class="help-label">引用</span>
-              <code>> 引用内容</code>
-            </div>
-            <div class="help-item">
-              <span class="help-label">代码块</span>
-              <code>```语言名</code>
-              <code>代码内容</code>
-              <code>```
-</code>
-            </div>
-            <div class="help-item">
-              <span class="help-label">无序列表</span>
-              <code>- 列表项</code>
-            </div>
-            <div class="help-item">
-              <span class="help-label">有序列表</span>
-              <code>1. 列表项</code>
-            </div>
-            <div class="help-item">
-              <span class="help-label">链接</span>
-              <code>[文字](URL)</code>
-            </div>
-            <div class="help-item">
-              <span class="help-label">图片</span>
-              <code>![描述](图片URL)</code>
-            </div>
-          </div>
-          <p class="help-tip">💡 提示：点击「📋 复制富文本」后，直接到微信公众号编辑器中 Ctrl+V 粘贴即可保留排版样式。</p>
-        </div>
-      </div>
     </div>
 
     <!-- 右侧：富文本预览区 -->
@@ -93,8 +45,9 @@ import MarkdownIt from 'markdown-it'
 import hljs from 'highlight.js'
 import 'highlight.js/styles/github.css' 
 
-// 1. 明确指定 md 的类型，解决 TS7022 隐式 any 报错
+// 【修改点2】：明确声明 md 的类型为 MarkdownIt，解决 TS7022 循环引用报错
 const md: MarkdownIt = new MarkdownIt({
+  // 【修改点3】：明确声明 highlight 函数的参数和返回值类型，解决 TS7023
   highlight: function (str: string, lang: string): string {
     if (lang && hljs.getLanguage(lang)) {
       try {
@@ -121,7 +74,7 @@ console.log("Hello MD2WX!");
 \`\`\`
 `)
 
-// 2. 为正则替换的参数添加明确的类型声明，解决 TS6133 和 TS7006 报错
+// 【修改点4】：为正则替换的参数添加明确的类型声明，并将未使用的 match 改为 _match，解决 TS6133 和 TS7006
 const renderedHtml = computed(() => {
   let html = md.render(markdownText.value)
   
@@ -140,9 +93,14 @@ const renderedHtml = computed(() => {
   return html
 })
 
-// 3. 明确指定 ref 的泛型，解决 TS18046 报错
+// 【修改点5】：明确指定 ref 泛型，并将 fileInput 改名为 fileInputRef 且真正使用它，解决 TS18046 和 TS6133
 const previewRef = ref<HTMLElement | null>(null)
-const fileInput = ref<HTMLInputElement | null>(null)
+const fileInputRef = ref<HTMLInputElement | null>(null)
+
+// 触发隐藏的 file input
+const triggerFileInput = () => {
+  fileInputRef.value?.click()
+}
 
 const handleFileImport = (event: Event) => {
   const target = event.target as HTMLInputElement
@@ -214,7 +172,6 @@ const downloadFile = (blob: Blob, fileName: string) => {
 }
 </script>
 
-
 <style scoped>
 .editor-container {
   display: flex;
@@ -257,7 +214,6 @@ const downloadFile = (blob: Blob, fileName: string) => {
 .export-rtf-btn:hover { background-color: #d48806; }
 .export-html-btn { background-color: #722ed1; }
 .export-html-btn:hover { background-color: #531dab; }
-
 .editor-textarea {
   flex: 1;
   border: none;
@@ -266,60 +222,6 @@ const downloadFile = (blob: Blob, fileName: string) => {
   font-size: 16px;
   font-family: monospace;
 }
-
-/* 使用说明样式 */
-.help-panel {
-  margin-top: 10px;
-  border-top: 1px dashed #ddd;
-  padding-top: 8px;
-}
-.help-toggle {
-  background: none;
-  border: none;
-  color: #888;
-  font-size: 13px;
-  cursor: pointer;
-  padding: 4px 0;
-}
-.help-toggle:hover {
-  color: #333;
-}
-.help-content {
-  margin-top: 8px;
-  padding: 10px;
-  background: #fafafa;
-  border-radius: 6px;
-  border: 1px solid #eee;
-}
-.help-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px 16px;
-}
-.help-item {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.help-label {
-  font-size: 12px;
-  color: #999;
-  font-weight: bold;
-}
-.help-item code {
-  font-size: 12px;
-  color: #555;
-  background: #eee;
-  padding: 1px 4px;
-  border-radius: 3px;
-  font-family: monospace;
-}
-.help-tip {
-  margin-top: 10px;
-  font-size: 12px;
-  color: #888;
-}
-
 .preview-content {
   flex: 1;
   overflow-y: auto;
