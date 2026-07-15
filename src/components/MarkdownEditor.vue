@@ -93,8 +93,9 @@ import MarkdownIt from 'markdown-it'
 import hljs from 'highlight.js'
 import 'highlight.js/styles/github.css' 
 
-const md = new MarkdownIt({
-  highlight: function (str, lang) {
+// 1. 明确指定 md 的类型，解决 TS7022 隐式 any 报错
+const md: MarkdownIt = new MarkdownIt({
+  highlight: function (str: string, lang: string): string {
     if (lang && hljs.getLanguage(lang)) {
       try {
         return `<pre class="hljs"><code>${hljs.highlight(str, { language: lang }).value}</code></pre>`
@@ -106,37 +107,42 @@ const md = new MarkdownIt({
 
 const markdownText = ref(`## 🚀 破冰行动：核心链路
 
-这是你的 **Markdown 转富文本** 工具！
+这是你的第一个 **Markdown 转富文本** 工具！
 
-### 🎯 目标
+### 🎯 进阶目标
 
-给标题加上漂亮的排版，让文章更有质感。
+给标题加上漂亮的排版样式，让文章更有质感。
 
+> 周末搞到这个程度，成就感绝对爆棚！
+> 这个排版工具太好用了！
 
-
+\`\`\`javascript
+console.log("Hello MD2WX!");
+\`\`\`
 `)
 
+// 2. 为正则替换的参数添加明确的类型声明，解决 TS6133 和 TS7006 报错
 const renderedHtml = computed(() => {
   let html = md.render(markdownText.value)
   
-  html = html.replace(/<h2>(.*?)<\/h2>/g, (match, p1) => {
+  html = html.replace(/<h2>(.*?)<\/h2>/g, (_match: string, p1: string) => {
     return `<h2 style="margin: 20px 0 10px; padding: 10px 15px; font-size: 20px; font-weight: bold; color: #333; border-left: 5px solid #07c160; background: linear-gradient(to right, #e8f8ef, #ffffff); border-radius: 4px;">${p1}</h2>`
   })
 
-  html = html.replace(/<h3>(.*?)<\/h3>/g, (match, p1) => {
+  html = html.replace(/<h3>(.*?)<\/h3>/g, (_match: string, p1: string) => {
     return `<h3 style="margin: 15px 0 10px; font-size: 18px; font-weight: bold; color: #1890ff; padding-bottom: 5px; border-bottom: 2px solid #1890ff; display: inline-block;">${p1}</h3>`
   })
 
-  html = html.replace(/<blockquote>([\s\S]*?)<\/blockquote>/g, (match, p1) => {
+  html = html.replace(/<blockquote>([\s\S]*?)<\/blockquote>/g, (_match: string, p1: string) => {
     return `<blockquote style="margin: 15px 0; padding: 15px 20px; background-color: #f8f9fa; border-left: 5px solid #1890ff; border-radius: 4px; color: #555; font-size: 15px; line-height: 1.8;">${p1}</blockquote>`
   })
 
   return html
 })
 
+// 3. 明确指定 ref 的泛型为 HTMLInputElement，解决 TS18046 报错
 const previewRef = ref<HTMLElement | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
-const showHelp = ref(false)
 
 const handleFileImport = (event: Event) => {
   const target = event.target as HTMLInputElement
@@ -207,6 +213,7 @@ const downloadFile = (blob: Blob, fileName: string) => {
   URL.revokeObjectURL(url)
 }
 </script>
+
 
 <style scoped>
 .editor-container {
