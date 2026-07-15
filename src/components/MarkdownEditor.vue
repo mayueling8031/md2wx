@@ -1,11 +1,10 @@
 <template>
   <div class="editor-container">
-    <!-- 左侧：Markdown 输入区 -->
     <div class="panel left-panel">
       <div class="panel-header">
         <h3>Markdown 编辑区</h3>
         <div class="header-actions">
-          <!-- 【修改点1】：不再使用 $refs.fileInput.click()，改用 ref 绑定，彻底解决 TS18046 -->
+          <!-- 1. 隐藏的文件选择框，绑定新的 ref -->
           <input 
             type="file" 
             ref="fileInputRef" 
@@ -13,6 +12,7 @@
             style="display: none;" 
             @change="handleFileImport" 
           />
+          <!-- 2. 导入按钮，点击触发方法 -->
           <button class="action-btn import-btn" @click="triggerFileInput">📂 导入 MD</button>
           <button class="action-btn copy-btn" @click="copyToWechat">📋 复制富文本</button>
           <button class="action-btn export-rtf-btn" @click="exportAsRtf">📝 导出 RTF</button>
@@ -21,12 +21,11 @@
       </div>
       <textarea 
         v-model="markdownText" 
-        placeholder="在这里输入 Markdown 内容，或者导入本地 .md 文件..."
+        placeholder="在这里输入 Markdown 内容..."
         class="editor-textarea"
       ></textarea>
     </div>
 
-    <!-- 右侧：富文本预览区 -->
     <div class="panel right-panel">
       <h3>预览区</h3>
       <div class="preview-content" ref="previewRef">
@@ -45,9 +44,8 @@ import MarkdownIt from 'markdown-it'
 import hljs from 'highlight.js'
 import 'highlight.js/styles/github.css' 
 
-// 【修改点2】：明确声明 md 的类型为 MarkdownIt，解决 TS7022 循环引用报错
+// 明确声明类型，解决循环推断
 const md: MarkdownIt = new MarkdownIt({
-  // 【修改点3】：明确声明 highlight 函数的参数和返回值类型，解决 TS7023
   highlight: function (str: string, lang: string): string {
     if (lang && hljs.getLanguage(lang)) {
       try {
@@ -58,23 +56,9 @@ const md: MarkdownIt = new MarkdownIt({
   }
 })
 
-const markdownText = ref(`## 🚀 破冰行动：核心链路
+const markdownText = ref(`## 🚀 破冰行动：核心链路\n\n这是你的第一个 **Markdown 转富文本** 工具！\n\n### 🎯 进阶目标\n\n> 周末搞到这个程度，成就感绝对爆棚！\n\n\`\`\`javascript\nconsole.log("Hello MD2WX!");\n\`\`\``)
 
-这是你的第一个 **Markdown 转富文本** 工具！
-
-### 🎯 进阶目标
-
-给标题加上漂亮的排版样式，让文章更有质感。
-
-> 周末搞到这个程度，成就感绝对爆棚！
-> 这个排版工具太好用了！
-
-\`\`\`javascript
-console.log("Hello MD2WX!");
-\`\`\`
-`)
-
-// 【修改点4】：为正则替换的参数添加明确的类型声明，并将未使用的 match 改为 _match，解决 TS6133 和 TS7006
+// 明确声明正则参数类型，未使用的参数加下划线
 const renderedHtml = computed(() => {
   let html = md.render(markdownText.value)
   
@@ -93,11 +77,11 @@ const renderedHtml = computed(() => {
   return html
 })
 
-// 【修改点5】：明确指定 ref 泛型，并将 fileInput 改名为 fileInputRef 且真正使用它，解决 TS18046 和 TS6133
+// 明确声明 ref 类型
 const previewRef = ref<HTMLElement | null>(null)
 const fileInputRef = ref<HTMLInputElement | null>(null)
 
-// 触发隐藏的 file input
+// 触发文件选择框
 const triggerFileInput = () => {
   fileInputRef.value?.click()
 }
@@ -132,12 +116,7 @@ const copyToWechat = async () => {
 const exportAsRtf = () => {
   if (!previewRef.value) return
   const htmlContent = previewRef.value.innerHTML
-  const rtfContent = `{\\rtf1\\ansi\\deff0
-{\\fonttbl{\\f0\\fswiss\\fcharset0 Arial;}}
-{\\colortbl;\\red0\\green0\\blue0;\\red0\\green0\\blue255;}
-\\viewkind4\\uc1\\pard\\lang1033\\f0\\fs24
-${htmlContent}
-}`
+  const rtfContent = `{\\rtf1\\ansi\\deff0\n{\\fonttbl{\\f0\\fswiss\\fcharset0 Arial;}}\n{\\colortbl;\\red0\\green0\\blue0;\\red0\\green0\\blue255;}\n\\viewkind4\\uc1\\pard\\lang1033\\f0\\fs24\n${htmlContent}\n}`
   const blob = new Blob([rtfContent], { type: 'application/rtf' })
   downloadFile(blob, 'article.rtf')
 }
@@ -145,17 +124,7 @@ ${htmlContent}
 const exportAsHtml = () => {
   if (!previewRef.value) return
   const htmlContent = previewRef.value.innerHTML
-  const fullHtml = `<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Markdown 导出文章</title>
-</head>
-<body style="max-width: 800px; margin: 40px auto; padding: 0 20px;">
-  ${htmlContent}
-</body>
-</html>`
+  const fullHtml = `<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>Markdown 导出文章</title>\n</head>\n<body style="max-width: 800px; margin: 40px auto; padding: 0 20px;">\n  ${htmlContent}\n</body>\n</html>`
   const blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' })
   downloadFile(blob, 'article.html')
 }
@@ -173,39 +142,11 @@ const downloadFile = (blob: Blob, fileName: string) => {
 </script>
 
 <style scoped>
-.editor-container {
-  display: flex;
-  height: 90vh;
-  gap: 10px;
-  padding: 10px;
-}
-.panel {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 10px;
-}
-.panel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-.header-actions {
-  display: flex;
-  gap: 8px;
-}
-.action-btn {
-  padding: 6px 12px;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  white-space: nowrap;
-}
+.editor-container { display: flex; height: 90vh; gap: 10px; padding: 10px; }
+.panel { flex: 1; display: flex; flex-direction: column; border: 1px solid #ddd; border-radius: 8px; padding: 10px; }
+.panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.header-actions { display: flex; gap: 8px; }
+.action-btn { padding: 6px 12px; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; white-space: nowrap; }
 .import-btn { background-color: #1890ff; }
 .import-btn:hover { background-color: #096dd9; }
 .copy-btn { background-color: #07c160; }
@@ -214,20 +155,6 @@ const downloadFile = (blob: Blob, fileName: string) => {
 .export-rtf-btn:hover { background-color: #d48806; }
 .export-html-btn { background-color: #722ed1; }
 .export-html-btn:hover { background-color: #531dab; }
-.editor-textarea {
-  flex: 1;
-  border: none;
-  outline: none;
-  resize: none;
-  font-size: 16px;
-  font-family: monospace;
-}
-.preview-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 10px;
-  border: 1px solid #eee;
-  border-radius: 4px;
-  background: #fff;
-}
+.editor-textarea { flex: 1; border: none; outline: none; resize: none; font-size: 16px; font-family: monospace; }
+.preview-content { flex: 1; overflow-y: auto; padding: 10px; border: 1px solid #eee; border-radius: 4px; background: #fff; }
 </style>
